@@ -1,14 +1,22 @@
-# Use full Java image (NOT slim)
-FROM openjdk:17-jdk
+# Build stage
+FROM maven:3.9.6-eclipse-temurin-17 AS build
 
-# Set working directory
 WORKDIR /app
 
-# Copy JAR from target folder
-COPY target/*.jar app.jar
+COPY pom.xml .
+RUN mvn dependency:go-offline
 
-# Expose port
+COPY src ./src
+
+RUN mvn clean package -DskipTests
+
+# Run stage
+FROM eclipse-temurin:17-jdk-alpine
+
+WORKDIR /app
+
+COPY --from=build /app/target/*.jar app.jar
+
 EXPOSE 8080
 
-# Run application
-ENTRYPOINT ["java","-jar","app.jar"]
+CMD ["java","-jar","app.jar"]
